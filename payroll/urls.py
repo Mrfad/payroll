@@ -5,7 +5,8 @@ from .views import (
     BreakPolicyViewSet, OvertimePolicyViewSet, ShiftAssignmentViewSet,
     AttendanceRecordViewSet, LeaveTypeViewSet, LeaveBalanceViewSet,
     LeaveRequestViewSet, SalaryComponentViewSet, EmployeeSalaryStructureViewSet,
-    PayrollPeriodViewSet, PayrollRunViewSet, PayrollEntryViewSet
+    PayrollPeriodViewSet, PayrollRunViewSet, PayrollEntryViewSet, UserProfileViewSet, AuditLogViewSet,
+    DashboardViewSet
 )
 
 router = DefaultRouter()
@@ -25,6 +26,9 @@ router.register(r'employee-salary-structures', EmployeeSalaryStructureViewSet)
 router.register(r'payroll-periods', PayrollPeriodViewSet)
 router.register(r'payroll-runs', PayrollRunViewSet)
 router.register(r'payroll-entries', PayrollEntryViewSet)
+router.register(r'user-profile', UserProfileViewSet)
+router.register(r'audit-logs', AuditLogViewSet, basename='auditlog')
+router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 
 urlpatterns = [
     path('', include(router.urls)),

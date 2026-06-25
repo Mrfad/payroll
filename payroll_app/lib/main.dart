@@ -1,48 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/auth_provider.dart';
-import 'features/auth/login_screen.dart';
-import 'features/dashboard/dashboard_screen.dart';
+import 'pages/login_page.dart';
+import 'theme/app_theme.dart';
+import 'theme/theme_provider.dart';
+import 'providers/auth_provider.dart';
+import 'services/sync_service.dart';
+import 'services/websocket_service.dart';
+import 'core/di/injection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  setupInjection();
+  SyncService().initialize();
+  WebSocketService().connect();
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuthStatus()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: const EnterprisePayrollApp(),
+      child: const PayrollApp(),
     ),
   );
 }
 
-class EnterprisePayrollApp extends StatelessWidget {
-  const EnterprisePayrollApp({super.key});
+class PayrollApp extends StatelessWidget {
+  const PayrollApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Enterprise Payroll',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.isInitializing) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          if (authProvider.isAuthenticated) {
-            return const DashboardScreen();
-          }
-          return const LoginScreen();
-        },
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'ShieldPay',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: const LoginPage(),
+        );
+      },
     );
   }
 }

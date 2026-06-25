@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../core/di/injection.dart';
+import '../services/api_result.dart';
+import '../data/repositories/auth_repository.dart';
 import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -20,24 +22,24 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
 
       // Call the real API
-      final result = await ApiService.login(
+      final result = await getIt<AuthRepository>().login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
 
       setState(() => _isLoading = false);
 
-      if (result != null) {
+      if (result is ApiSuccess) {
         // Success - navigate to Home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
         );
-      } else {
+      } else if (result is ApiError) {
         // Failure - show error message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid username or password'),
+          SnackBar(
+            content: Text(result.message),
             backgroundColor: Colors.red,
           ),
         );
@@ -130,6 +132,9 @@ class _LoginPageState extends State<LoginPage> {
                               return 'Please enter your password';
                             }
                             return null;
+                          },
+                          onFieldSubmitted: (_) {
+                            if (!_isLoading) _handleLogin();
                           },
                         ),
                         const SizedBox(height: 8),

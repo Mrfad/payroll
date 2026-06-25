@@ -2,8 +2,26 @@ from django.contrib import admin
 from .models import (
     Company, Department, Employee, Shift, BreakPolicy, OvertimePolicy,
     ShiftAssignment, AttendanceRecord, LeaveType, LeaveBalance, LeaveRequest,
-    SalaryComponent, EmployeeSalaryStructure, PayrollPeriod, PayrollRun, PayrollEntry
+    SalaryComponent, EmployeeSalaryStructure, PayrollPeriod, PayrollRun, PayrollEntry, UserProfile
 )
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
+
+class UserProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+
+class CustomUserAdmin(UserAdmin):
+    inlines = (UserProfileInline, )
+
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'theme')
+    search_fields = ('user__username',)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
@@ -83,3 +101,5 @@ class PayrollRunAdmin(admin.ModelAdmin):
 @admin.register(PayrollEntry)
 class PayrollEntryAdmin(admin.ModelAdmin):
     list_display = ('run', 'employee', 'net_pay')
+    list_filter = ('run',)
+    list_select_related = ('run__period', 'employee__user')

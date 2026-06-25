@@ -18,6 +18,13 @@ class Company(TimeStampedModel):
     def __str__(self):
         return self.name
 
+class UserProfile(TimeStampedModel):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    theme = models.CharField(max_length=20, default='light', choices=[('light', 'Light'), ('dark', 'Dark')])
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+
 class Department(TimeStampedModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -37,6 +44,7 @@ class Employee(TimeStampedModel):
     profile_picture = models.ImageField(upload_to='employee_profiles/', blank=True, null=True)
     base_salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     # ... personal info, hire_date, termination_date
 
     def save(self, *args, **kwargs):
@@ -95,19 +103,28 @@ class ShiftAssignment(TimeStampedModel):
 
 class AttendanceRecord(TimeStampedModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    shift_assignment = models.ForeignKey(ShiftAssignment, null=True, on_delete=models.SET_NULL)
+    shift_assignment = models.ForeignKey(ShiftAssignment, null=True, blank=True, on_delete=models.SET_NULL)
     date = models.DateField()
-    first_in = models.DateTimeField(null=True)
-    last_out = models.DateTimeField(null=True)
-    break_start = models.DateTimeField(null=True)
-    break_end = models.DateTimeField(null=True)
+    first_in = models.DateTimeField(null=True, blank=True)
+    last_out = models.DateTimeField(null=True, blank=True)
+    break_start = models.DateTimeField(null=True, blank=True)
+    break_end = models.DateTimeField(null=True, blank=True)
     total_work_seconds = models.PositiveIntegerField(default=0)
     overtime_seconds = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=[
-        ('present','Present'),('absent','Absent'),('half_day','Half Day'),('holiday','Holiday'),('weekend','Weekend')
+        ('present','Present'),
+        ('absent','Absent'),
+        ('half_day','Half Day'),
+        ('holiday','Holiday'),
+        ('weekend','Weekend'),
+        ('missing_punch', 'Missing Punch')
     ])
-    raw_logs = models.ManyToManyField('device.RawAttendanceLog', blank=True)
+    is_anomaly = models.BooleanField(default=False)
+    anomaly_reason = models.CharField(max_length=255, blank=True, null=True)
     # computed fields stored for payroll performance
+
+    class Meta:
+        unique_together = [('employee', 'date')]
 
     def __str__(self):
         return f"{self.employee} - {self.date}"
@@ -194,3 +211,12 @@ class PayrollEntry(TimeStampedModel):
 
     def __str__(self):
         return f"{self.employee} - {self.run.period}"
+
+class AuditLog(TimeStampedModel):
+    action = models.CharField(max_length=50) # CREATE, UPDATE, FREEZE, UNFREEZE, DELETE
+    target_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='audit_targets')
+    performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='audit_actions')
+    details = models.TextField()
+
+    def __str__(self):
+        return f"{self.action} on {self.target_user} by {self.performed_by}"

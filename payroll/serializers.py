@@ -1,11 +1,24 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db import transaction, models
 from .models import (
     Company, Department, Employee, Shift, BreakPolicy, OvertimePolicy,
     ShiftAssignment, AttendanceRecord, LeaveType, LeaveBalance, LeaveRequest,
-    SalaryComponent, EmployeeSalaryStructure, PayrollPeriod, PayrollRun, PayrollEntry
+    SalaryComponent, EmployeeSalaryStructure, PayrollPeriod, PayrollRun, PayrollEntry, UserProfile, AuditLog
 )
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['theme']
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    target_username = serializers.CharField(source='target_user.username', read_only=True)
+    performed_by_username = serializers.CharField(source='performed_by.username', read_only=True)
+
+    class Meta:
+        model = AuditLog
+        fields = '__all__'
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,6 +31,12 @@ class DepartmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
     class Meta:
         model = Employee
         fields = '__all__'
@@ -55,9 +74,22 @@ class ShiftAssignmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    employee_external_id = serializers.CharField(source='employee.employee_id', read_only=True)
+    punched_from = serializers.SerializerMethodField()
+
     class Meta:
         model = AttendanceRecord
         fields = '__all__'
+
+    def get_punched_from(self, obj):
+        devices = obj.raw_logs.values_list('device__name', flat=True).distinct()
+        return ", ".join(filter(None, devices)) if devices else "Manual / Unknown"
+
+    def get_employee_name(self, obj):
+        if obj.employee and hasattr(obj.employee, 'user') and obj.employee.user:
+            return f"{obj.employee.user.first_name} {obj.employee.user.last_name}".strip() or obj.employee.user.username
+        return "Unknown"
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,9 +127,18 @@ class PayrollRunSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PayrollEntrySerializer(serializers.ModelSerializer):
+    period_start = serializers.DateField(source='run.period.start_date', read_only=True)
+    period_end = serializers.DateField(source='run.period.end_date', read_only=True)
+    employee_name = serializers.SerializerMethodField()
+
     class Meta:
         model = PayrollEntry
         fields = '__all__'
+
+    def get_employee_name(self, obj):
+        if obj.employee and hasattr(obj.employee, 'user') and obj.employee.user:
+            return f"{obj.employee.user.first_name} {obj.employee.user.last_name}".strip() or obj.employee.user.username
+        return "Unknown"
 
 class EmployeeEnrollmentSerializer(serializers.Serializer):
     # User fields
@@ -139,7 +180,11 @@ class EmployeeEnrollmentSerializer(serializers.Serializer):
             user.set_password(password)
             user.save()
 
-            # 2. Create Employee Profile
+            # 2. Add User to Employee Group
+            group, _ = Group.objects.get_or_create(name='Employee')
+            user.groups.add(group)
+
+            # 3. Create Employee Profile
             employee = Employee.objects.create(user=user, **employee_data)
             
         return employee

@@ -7,23 +7,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:payroll_app/main.dart';
-import 'package:payroll_app/core/auth_provider.dart';
+import 'package:payroll_app/core/di/injection.dart';
 
 void main() {
-  testWidgets('App builds smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ],
-        child: const EnterprisePayrollApp(),
-      ),
-    );
-
-    // Verify that the app starts.
-    expect(find.byType(EnterprisePayrollApp), findsOneWidget);
+  testWidgets('App smoke test', (WidgetTester tester) async {
+    setupInjection();
+    await tester.pumpWidget(const PayrollApp());
+    expect(find.text('Login'), findsWidgets);
   });
 }

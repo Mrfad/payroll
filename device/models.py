@@ -1,4 +1,5 @@
 # device/models.py
+import uuid
 from django.db import models
 
 class TimeStampedModel(models.Model):
@@ -13,6 +14,7 @@ class DeviceConfiguration(TimeStampedModel):
     company = models.ForeignKey('payroll.Company', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     device_type = models.CharField(max_length=50)  # e.g., 'zkteco_k30', 'faceapi_v2'
+    api_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     api_endpoint = models.URLField(blank=True, null=True)
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     port = models.PositiveIntegerField(blank=True, null=True)
@@ -35,6 +37,7 @@ class RawAttendanceLog(TimeStampedModel):
     status = models.CharField(max_length=20, default='pending',
                               choices=[('pending','Pending'),('processed','Processed'),('failed','Failed')])
     processed_at = models.DateTimeField(null=True, blank=True)
+    attendance_record = models.ForeignKey('payroll.AttendanceRecord', on_delete=models.SET_NULL, null=True, blank=True, related_name='raw_logs')
 
     def __str__(self):
         return f"{self.external_id} - {self.punch_time} ({self.status})"
