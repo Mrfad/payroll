@@ -14,7 +14,8 @@ export default function EmployeeModal({ isOpen, onClose, onSaved, employee }) {
     employee_id: '',
     designation: '',
     phone: '',
-    base_salary: ''
+    base_salary: '',
+    hire_date: ''
   })
   
   const [companies, setCompanies] = useState([])
@@ -33,18 +34,19 @@ export default function EmployeeModal({ isOpen, onClose, onSaved, employee }) {
           email: employee.email || '',
           first_name: employee.first_name || '',
           last_name: employee.last_name || '',
-          password: '', // Password not editable here
+          password: '',
           company: employee.company || '',
           department: employee.department || '',
           employee_id: employee.employee_id || '',
           designation: employee.designation || '',
           phone: employee.phone || '',
-          base_salary: employee.base_salary || ''
+          base_salary: employee.base_salary || '',
+          hire_date: employee.hire_date || ''
         })
       } else {
         setFormData({
           username: '', email: '', first_name: '', last_name: '', password: '',
-          company: '', department: '', employee_id: '', designation: '', phone: '', base_salary: ''
+          company: '', department: '', employee_id: '', designation: '', phone: '', base_salary: '', hire_date: ''
         })
       }
       setError('')
@@ -73,13 +75,12 @@ export default function EmployeeModal({ isOpen, onClose, onSaved, employee }) {
     setError('')
 
     try {
-      // Clean up empty strings to null for IDs
       const payload = { ...formData }
       if (!payload.department) delete payload.department
       if (!payload.base_salary) delete payload.base_salary
+      if (!payload.hire_date) delete payload.hire_date
       
       if (isEdit) {
-        // Remove fields not allowed in PATCH
         delete payload.username
         delete payload.password
         delete payload.email
@@ -183,6 +184,13 @@ export default function EmployeeModal({ isOpen, onClose, onSaved, employee }) {
             <div className="form-group">
               <label>Base Salary</label>
               <input type="number" step="0.01" name="base_salary" value={formData.base_salary} onChange={handleChange} />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Hire Date</label>
+              <input type="date" name="hire_date" value={formData.hire_date || ''} onChange={handleChange} />
             </div>
           </div>
 

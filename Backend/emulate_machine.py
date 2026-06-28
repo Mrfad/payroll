@@ -1,3 +1,5 @@
+# Backend\emulate_machine.py
+from companies.models import Company
 import os
 import sys
 import json

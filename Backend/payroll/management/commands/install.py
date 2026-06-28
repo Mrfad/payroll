@@ -1,6 +1,9 @@
+# Backend\payroll\management\commands\install.py
+from companies.models import Company, Department
+
 """
 Management command to set up the ultimate demo environment.
-Creates an admin user, a company, registers all 7 simulator devices, 
+Creates an admin user, a company, registers all 7 simulator devices,
 and optionally creates dummy employees.
 
 Usage:
@@ -9,10 +12,12 @@ Usage:
     python manage.py install --no-input
 """
 import sys
+
+from device.models import DeviceConfiguration
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+
 from payroll.models import Company, Department, Employee
-from device.models import DeviceConfiguration
 
 # Fixed, recognizable UUIDs for each simulator brand.
 SIMULATOR_TOKENS = {
@@ -50,7 +55,10 @@ SIMULATOR_META = {
         "ip_address": "10.0.0.100",
         "port": 5010,
         "serial_number": "ANV012410001",
-        "extra_config": {"firmware_version": "CrossChex 4.12.5", "protocol": "AnvizTCP"},
+        "extra_config": {
+            "firmware_version": "CrossChex 4.12.5",
+            "protocol": "AnvizTCP",
+        },
         "auth_credentials": {"username": "admin"},
     },
     "suprema": {
@@ -68,7 +76,10 @@ SIMULATOR_META = {
         "ip_address": "192.168.2.100",
         "port": 80,
         "serial_number": "DH202401000001",
-        "extra_config": {"firmware_version": "DH_IPS_V4.2.8_202403", "protocol": "DahuaHTTP"},
+        "extra_config": {
+            "firmware_version": "DH_IPS_V4.2.8_202403",
+            "protocol": "DahuaHTTP",
+        },
         "auth_credentials": {"username": "admin"},
     },
     "idemia": {
@@ -86,34 +97,52 @@ SIMULATOR_META = {
         "ip_address": "192.168.0.101",
         "port": 3000,
         "serial_number": "SF202401011001",
-        "extra_config": {"firmware_version": "SifarmaOS 3.1.2", "protocol": "SifarmaTCP"},
+        "extra_config": {
+            "firmware_version": "SifarmaOS 3.1.2",
+            "protocol": "SifarmaTCP",
+        },
         "auth_credentials": {"username": "admin"},
     },
 }
+
 
 class Command(BaseCommand):
     help = "The Ultimate Installation Command. Creates company, admin, 7 devices, and optionally dummy users."
 
     def add_arguments(self, parser):
-        parser.add_argument('--no-input', action='store_true', help='Skip interactive prompts (will not create dummy employees unless specified).')
-        parser.add_argument('--with-employees', action='store_true', help='Create dummy employees automatically without prompting.')
+        parser.add_argument(
+            "--no-input",
+            action="store_true",
+            help="Skip interactive prompts (will not create dummy employees unless specified).",
+        )
+        parser.add_argument(
+            "--with-employees",
+            action="store_true",
+            help="Create dummy employees automatically without prompting.",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS("🚀 Starting the Ultimate Environment Setup...\n"))
-        
+        self.stdout.write(
+            self.style.SUCCESS("🚀 Starting the Ultimate Environment Setup...\n")
+        )
+
         # 1. Create superuser
-        if not User.objects.filter(username='admin').exists():
-            User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
-            self.stdout.write(self.style.SUCCESS('✓ Superuser created (username: admin, password: admin123)'))
+        if not User.objects.filter(username="admin").exists():
+            User.objects.create_superuser("admin", "admin@example.com", "admin123")
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "✓ Superuser created (username: admin, password: admin123)"
+                )
+            )
         else:
-            self.stdout.write('✓ Superuser admin already exists.')
+            self.stdout.write("✓ Superuser admin already exists.")
 
         # 2. Create Company
-        company, created = Company.objects.get_or_create(name='TechNova Solutions')
+        company, created = Company.objects.get_or_create(name="TechNova Solutions")
         if created:
-            self.stdout.write(self.style.SUCCESS(f'✓ Company created: {company.name}'))
+            self.stdout.write(self.style.SUCCESS(f"✓ Company created: {company.name}"))
         else:
-            self.stdout.write(f'✓ Company {company.name} already exists.')
+            self.stdout.write(f"✓ Company {company.name} already exists.")
 
         # 3. Create 7 Simulator Devices
         self.stdout.write("\n🔌 Setting up Simulator Devices...")
@@ -139,26 +168,30 @@ class Command(BaseCommand):
                 self.stdout.write(f"  · Exists : {meta['name']}")
 
         # 4. Dummy Users Prompt
-        create_emps = options['with_employees']
-        if not create_emps and not options['no_input']:
+        create_emps = options["with_employees"]
+        if not create_emps and not options["no_input"]:
             # Ask interactively
-            answer = input("\n👨‍💼 Do you want to create 5 dummy employees for testing? (y/N): ")
-            if answer.lower() in ['y', 'yes']:
+            answer = input(
+                "\n👨‍💼 Do you want to create 5 dummy employees for testing? (y/N): "
+            )
+            if answer.lower() in ["y", "yes"]:
                 create_emps = True
 
         if create_emps:
             self.stdout.write("\n👨‍💼 Creating dummy employees...")
-            department, _ = Department.objects.get_or_create(company=company, name="General")
-            
+            department, _ = Department.objects.get_or_create(
+                company=company, name="General"
+            )
+
             created_count = 0
             for i in range(1, 6):
                 emp_id = f"EMP{i:03d}"
                 username = f"employee_{emp_id.lower()}"
-                
+
                 if Employee.objects.filter(employee_id=emp_id).exists():
                     self.stdout.write(f"  · {emp_id} already exists")
                     continue
-                    
+
                 user, _ = User.objects.get_or_create(
                     username=username,
                     defaults={
@@ -179,8 +212,14 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(self.style.SUCCESS(f"  ✓ {emp_id} created"))
                 created_count += 1
-            
-            if created_count > 0:
-                self.stdout.write(self.style.SUCCESS(f"\nCreated {created_count} dummy employees. Password is 'test1234' for all."))
 
-        self.stdout.write(self.style.SUCCESS("\n✅ Setup Complete! You are ready to go!"))
+            if created_count > 0:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"\nCreated {created_count} dummy employees. Password is 'test1234' for all."
+                    )
+                )
+
+        self.stdout.write(
+            self.style.SUCCESS("\n✅ Setup Complete! You are ready to go!")
+        )

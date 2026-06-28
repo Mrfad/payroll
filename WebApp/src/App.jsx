@@ -11,13 +11,33 @@ import EmployeeProfile from './components/Employees/EmployeeProfile'
 
 function App() {
   const [theme, setTheme] = useState('light')
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [selectedProfileEmployee, setSelectedProfileEmployee] = useState(null)
+  // Restore activeTab from sessionStorage, default to 'dashboard'
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('activeTab') || 'dashboard'
+  })
+  // Restore selected employee from sessionStorage
+  const [selectedProfileEmployee, setSelectedProfileEmployee] = useState(() => {
+    const stored = sessionStorage.getItem('selectedEmployee')
+    return stored ? JSON.parse(stored) : null
+  })
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'))
   const [userId, setUserId] = useState(null)
   const [lastWsEvent, setLastWsEvent] = useState(null)
-  const API_URL = 'http://localhost:8000/api/v1/payroll/user-profile/me/'
+  const API_URL = 'http://localhost:8000/api/v1/accounts/user-profile/me/'
   const WS_URL = 'ws://localhost:8000/ws/updates/'
+
+  // Persist activeTab and selectedEmployee to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('activeTab', activeTab)
+  }, [activeTab])
+
+  useEffect(() => {
+    if (selectedProfileEmployee) {
+      sessionStorage.setItem('selectedEmployee', JSON.stringify(selectedProfileEmployee))
+    } else {
+      sessionStorage.removeItem('selectedEmployee')
+    }
+  }, [selectedProfileEmployee])
 
   // Initialize theme from backend or fallback to local storage
   useEffect(() => {
@@ -90,6 +110,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('refresh')
+    sessionStorage.clear()
     setIsAuthenticated(false)
   }
 
@@ -209,68 +230,36 @@ function App() {
           {activeTab === 'dashboard' && (
             <>
               <div className="dashboard-grid">
-            {/* Stat Card 1 */}
-            <div className="glass-panel stat-card">
-              <div className="stat-icon">
-                <DollarSign size={24} />
-              </div>
-              <div>
-                <div className="stat-label">Total Payroll</div>
-                <div className="stat-value">$124,500</div>
-              </div>
-            </div>
-
-            {/* Stat Card 2 */}
-            <div className="glass-panel stat-card">
-              <div className="stat-icon">
-                <Users size={24} />
-              </div>
-              <div>
-                <div className="stat-label">Active Employees</div>
-                <div className="stat-value">42</div>
-              </div>
-            </div>
-
-            {/* Stat Card 3 */}
-            <div className="glass-panel stat-card">
-              <div className="stat-icon">
-                <TrendingUp size={24} />
-              </div>
-              <div>
-                <div className="stat-label">Next Processing</div>
-                <div className="stat-value" style={{ fontSize: '1.5rem', marginTop: '0.5rem' }}>July 1st</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="dashboard-section glass-panel" style={{ padding: '2rem' }}>
-            <h2>Recent Activity</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
-              {[1, 2, 3].map((i) => (
-                <div key={i} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '1rem',
-                  borderBottom: i !== 3 ? '1px solid var(--color-border)' : 'none'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--color-primary)' }}></div>
-                    <div>
-                      <div style={{ fontWeight: 500 }}>Payroll Approved</div>
-                      <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>June 15th Payroll cycle completed</div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>2 hours ago</span>
+                <div className="glass-panel stat-card">
+                  <div className="stat-icon"><DollarSign size={24} /></div>
+                  <div><div className="stat-label">Total Payroll</div><div className="stat-value">$124,500</div></div>
                 </div>
-              ))}
-            </div>
-            
-            <div style={{ marginTop: '2rem' }}>
-              <button className="btn-primary">View All Activity</button>
-            </div>
-          </div>
-          </>
+                <div className="glass-panel stat-card">
+                  <div className="stat-icon"><Users size={24} /></div>
+                  <div><div className="stat-label">Active Employees</div><div className="stat-value">42</div></div>
+                </div>
+                <div className="glass-panel stat-card">
+                  <div className="stat-icon"><TrendingUp size={24} /></div>
+                  <div><div className="stat-label">Next Processing</div><div className="stat-value" style={{ fontSize: '1.5rem', marginTop: '0.5rem' }}>July 1st</div></div>
+                </div>
+              </div>
+
+              <div className="dashboard-section glass-panel" style={{ padding: '2rem' }}>
+                <h2>Recent Activity</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: i !== 3 ? '1px solid var(--color-border)' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--color-primary)' }}></div>
+                        <div><div style={{ fontWeight: 500 }}>Payroll Approved</div><div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>June 15th Payroll cycle completed</div></div>
+                      </div>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>2 hours ago</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '2rem' }}><button className="btn-primary">View All Activity</button></div>
+              </div>
+            </>
           )}
         </div>
       </main>

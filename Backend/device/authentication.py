@@ -1,23 +1,28 @@
-from rest_framework import authentication
-from rest_framework import exceptions
-from django.contrib.auth.models import AnonymousUser
-from .models import DeviceConfiguration
+# Backend\device\authentication.py
 import uuid
+
+from django.contrib.auth.models import AnonymousUser
+from rest_framework import authentication, exceptions
+
+from .models import DeviceConfiguration
+
 
 class DeviceTokenAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        token = request.headers.get('X-Device-Token')
+        token = request.headers.get("X-Device-Token")
         if not token:
             return None
-        
+
         try:
-            device = DeviceConfiguration.objects.get(api_token=uuid.UUID(token), is_active=True)
+            device = DeviceConfiguration.objects.get(
+                api_token=uuid.UUID(token), is_active=True
+            )
         except (DeviceConfiguration.DoesNotExist, ValueError):
-            raise exceptions.NotAuthenticated('Invalid or inactive device token.')
-            
+            raise exceptions.NotAuthenticated("Invalid or inactive device token.")
+
         request.device = device
-        
+
         return (AnonymousUser(), device)
 
     def authenticate_header(self, request):
-        return 'Token'
+        return "Token"

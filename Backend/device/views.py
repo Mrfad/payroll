@@ -1,3 +1,4 @@
+# Backend\device\views.py
 import logging
 
 from rest_framework import status, viewsets
@@ -54,7 +55,7 @@ class DevicePushView(APIView):
 
             # Immediately process logs so AttendanceRecords are created
             try:
-                from payroll.services.attendance import AttendanceProcessingService
+                from attendance.services import AttendanceProcessingService
 
                 processed, failed = AttendanceProcessingService.process_pending_logs()
                 if failed:

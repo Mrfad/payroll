@@ -14,7 +14,8 @@ export default function EmployeesList({ lastWsEvent, onRowClick }) {
   const fetchEmployees = async () => {
     setIsLoading(true)
     try {
-      const url = showDeleted ? '/payroll/employees/?show_deleted=true' : '/payroll/employees/'
+      const url = showDeleted ? '/employees/employees/?show_deleted=true' : '/employees/employees/';
+
       const data = await apiFetch(url)
       setEmployees(data.results || data)
     } catch (e) {
@@ -36,7 +37,7 @@ export default function EmployeesList({ lastWsEvent, onRowClick }) {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) return
-    
+
     try {
       await apiFetch(`/payroll/employees/${id}/`, { method: 'DELETE' })
       fetchEmployees()
@@ -83,18 +84,18 @@ export default function EmployeesList({ lastWsEvent, onRowClick }) {
         </div>
         <div className="list-actions">
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            <input 
-              type="checkbox" 
-              checked={showDeleted} 
-              onChange={(e) => setShowDeleted(e.target.checked)} 
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
             />
             Show Deleted
           </label>
           <div className="input-with-icon" style={{ width: '250px' }}>
             <Search size={18} className="input-icon" />
-            <input 
-              type="text" 
-              placeholder="Search employees..." 
+            <input
+              type="text"
+              placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -167,9 +168,9 @@ export default function EmployeesList({ lastWsEvent, onRowClick }) {
         )}
       </div>
 
-      <EmployeeModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <EmployeeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onSaved={handleModalSaved}
         employee={selectedEmployee}
       />

@@ -1,1 +1,1 @@
-# Init for management module
+# Backend\payroll\management\__init__.py

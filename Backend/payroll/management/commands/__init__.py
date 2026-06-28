@@ -1,1 +1,1 @@
-# Init for commands module
+# Backend\payroll\management\commands\__init__.py
